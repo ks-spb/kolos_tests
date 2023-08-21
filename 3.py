@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # Загрузка изображения
-image = cv2.imread('screen.png')
+image = cv2.imread('screenshot.png')
 
 # Преобразование в оттенки серого
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
