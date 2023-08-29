@@ -1,11 +1,12 @@
 import mss
 import mss.tools
 import cv2
-from multiprocessing import Process, Queue, Lock
+from multiprocessing import Process, Queue, Manager
 from threading import Thread
 import time
 import numpy as np
 import keyboard
+from copy import copy, deepcopy
 
 
 def screen_monitor(queue_img):
@@ -29,7 +30,7 @@ def screen_monitor(queue_img):
         time.sleep(0.3)  # Пауза
 
 
-def process_changes(queue_hashes, queue_img, lock):
+def process_changes(queue_hashes, queue_img):
     """ Запускает поток, который делает скриншоты с заданной
         периодичностью и сообщает если экран изменился.
         При каждом обновлении экрана очищает выходной список и начинает заполнять его снова
@@ -83,8 +84,7 @@ def process_changes(queue_hashes, queue_img, lock):
                     break
             else:
                 # Если скриншот обработан, то передаем список хэшей в очередь
-                with lock:
-                    queue_hashes.put((screenshot, hashes_elements))
+                queue_hashes.put((screenshot, hashes_elements))
                 print('Обработано экранов ', queue_hashes.qsize())
                 print(f'Количество элементов последнего экрана: {len(hashes_elements)}')
                 print(f'Список хэшей последнего экрана: {hashes_elements}')
@@ -94,30 +94,26 @@ def process_changes(queue_hashes, queue_img, lock):
 
 flag_new_screen = False  # Флаг, который сообщает о том, что экран (False) не изменился
 if __name__ == "__main__":
+    with Manager() as manager:
+        queue_hashes = manager.Queue()  # Очередь для передачи списка хэшей элементов
+        queue_img = Queue()  # Очередь для передачи скриншота в np
 
-    queue_hashes = Queue()  # Очередь для передачи списка хэшей элементов
-    queue_img = Queue()  # Очередь для передачи скриншота в np
-    lock = Lock()
+        # Запуск процессов
+        p1 = Process(target=process_changes, args=(queue_hashes, queue_img,))
+        p1.start()
 
-    # Запуск процессов
-    p1 = Process(target=process_changes, args=(queue_hashes, queue_img, lock,))
-    p1.start()
+        print('Начало работы')
+        while True:
+            if keyboard.is_pressed('space'):
+                break
+        out = []
+        print('Выход из программы')
+        print('Получено экранов: ', queue_hashes.qsize())
+        while not queue_hashes.empty():
+            out.append(queue_hashes.get())
 
-    print('Начало работы')
-    while True:
-        if keyboard.is_pressed('space'):
-            break
-    out = []
-    print('Получено экранов: ', queue_hashes.qsize())
-    while not queue_hashes.empty():
-        a = queue_hashes.get()
-        out.append(queue_hashes.get())
-        print('Осталось экранов: ', queue_hashes.qsize())
-
-    print('Выход из программы')
-    for i, (img, ret) in enumerate(out):
-        for key, value in ret.items():
-            cv2.rectangle(img, (value[0], value[1]), (value[2], value[3]), (0, 0, 255), 2)
-        print(i)
-        cv2.imwrite(f'{str(i)}.jpg', img)
-    p1.terminate()
+        for i, (img, ret) in enumerate(out):
+            for key, value in ret.items():
+                cv2.rectangle(img, (value[0], value[1]), (value[2], value[3]), (0, 0, 255), 2)
+            cv2.imwrite(f'{str(i)}.jpg', img)
+        p1.terminate()
