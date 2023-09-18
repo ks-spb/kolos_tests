@@ -138,6 +138,8 @@ def view_screenshots(cast, name):
     canvas.update()
     canvas.focus_set()
 
+    view.grab_set()
+    view.focus_set()
     view.wait_window()
 
 
