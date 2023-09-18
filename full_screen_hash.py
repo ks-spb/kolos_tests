@@ -2,6 +2,8 @@
 # Программа ожидает нажатия клавиши ctrl и делает скриншот с помощью mss
 # Скриншот сохраняется в папку full_screen в формате png с именем scr_1.png, scr_2.png, ...
 # В файл full_screen.txt записывается номер скриншота и его хэш
+# По нажатию клавиши shift программа делает скриншот текущего экрана
+# и показывает скриншоты с близкими хэшами
 import json
 import tkinter as tk
 from tkinter import messagebox
@@ -13,6 +15,8 @@ import numpy as np
 import keyboard
 import os
 
+
+NORM = 9  # Допустимая разница хэшей
 
 def screenshot():
     """ Делает скриншот и возвращает его в виде np массива """
@@ -70,7 +74,7 @@ class ScreenShoManager:
         cast = []
         for num, hash_string in self.screens.items():
             hash2 = np.frombuffer(bytes.fromhex(hash_string), dtype=np.uint8)
-            if cv2.norm(hash1, hash2, cv2.NORM_HAMMING) < 12:
+            if cv2.norm(hash1, hash2, cv2.NORM_HAMMING) < NORM:
                 cast.append(f'full_screen/scr_{num}.png')
                 print(f'Найден скриншот: scr_{num}.png')
         return cast
