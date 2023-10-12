@@ -23,6 +23,7 @@ import mss.tools
 import cv2
 import numpy as np
 import zlib
+import time
 import keyboard
 import os
 
@@ -110,7 +111,10 @@ class ScreenShoManager:
 
 def on_ctrl_press(event):
     """ Обработчик нажатия клавиши ctrl """
-    print('Нажата клавиша ctrl')
+
+    # Измеряем время выполнения
+    start_time = time.time()
+
     img = screenshot()  # Делаем скриншот
     hashes_list = scr_manager.get_hashes_screen(img)  # Получаем список хэшей элементов
 
@@ -138,6 +142,8 @@ def on_ctrl_press(event):
     scr = 0
     if is_screen:
         scr = max(is_screen, key=is_screen.get)
+
+    print(f'Время выполнения: {time.time() - start_time} сек.')
 
     if not scr or is_screen[scr]/(len(hashes_list)/100) < COUNT_EL:
         # Если счетчик максимального экрана меньше порога, то это новый экран
