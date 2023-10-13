@@ -3,8 +3,8 @@
 
 # Создается объект tkinter без окна
 # Программа ожидает нажатия клавиши ctrl и делает скриншот с помощью mss
-# На экране находятся элементы (как в screen_monitoring.py), тут нас интересуют только их координаты и размеры
-# По этим данным вычисляется хэши.
+# На экране находятся элементы (как в screen_monitoring.py), тут нас интересуют только их координаты.
+# Координаты округляются до заданного значения, объединяются в строку и вычисляется crc хэш.
 # Каждый хэш проверяется по БД, и если есть, извлекаются номера экранов, на которых он
 # встречается. По частоте встречаемости находим экран или экраны с наибольшим совпадением.
 # Новые хэши добавляются в БД с найденным номером.
@@ -73,13 +73,13 @@ class ScreenShoManager:
 
     def get_hashes_screen(self, screenshot):
         """ Принимает скриншот в формате np, находит на нем прямоугольные области описывающие элементы,
-        получает crc хэши прямоугольников по x, y, w, h, возвращает их список """
+        получает crc хэши округленных координат x, y и возвращает их список """
 
         # Применяем Canny алгоритм для поиска границ
         edges = cv2.Canny(screenshot, 100, 200)
 
         # Применяем морфологическую операцию закрытия
-        kernel = np.ones((7, 7), np.uint8)
+        kernel = np.ones((15, 15), np.uint8)
         closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
 
         # Ищем контуры и проходим по ним
@@ -89,15 +89,13 @@ class ScreenShoManager:
 
         for cnt in contours:
             # Находим прямоугольник
-            x, y, w, h = cv2.boundingRect(cnt)
+            x, y, *_ = cv2.boundingRect(cnt)
 
             # Округляем координаты и размеры прямоугольника для получения допустимых отличий
-            x_scaled = x // ACCEPT
-            y_scaled = y // ACCEPT
-            w_scaled = w // ACCEPT
-            h_scaled = h // ACCEPT
+            x_scaled = round(x / ACCEPT) * ACCEPT
+            y_scaled = round(y / ACCEPT) * ACCEPT
 
-            rect_str = str(x_scaled) + str(y_scaled) + str(w_scaled) + str(h_scaled)
+            rect_str = str(x_scaled) + str(y_scaled)
 
             hash_bytes = zlib.crc32(rect_str.encode())
             hash_list.append(f"{hash_bytes:08x}")  # Добавляем хэш в список

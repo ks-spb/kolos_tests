@@ -72,7 +72,7 @@ def process_changes(queue_hashes, queue_img):
             contours, hierarchy = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
             hashes_elements.clear()
-
+            print('Контуров ', len(contours))
             for cnt in contours:
                 # Находим прямоугольник
                 x, y, w, h = cv2.boundingRect(cnt)
